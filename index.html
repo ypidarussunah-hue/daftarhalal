@@ -584,7 +584,7 @@
     <h1>Daftar Sertifikat Halal UMKM GRATIS!</h1>
     <p class="hero-sub">Pendampingan Sertifikasi Halal Self Declare bersama LP3H Darussunah</p>
     <p class="hero-copy">Meningkatkan kepercayaan pelanggan dimulai dari legalitas usaha. Tim Pendamping Halal LP3H Darussunah siap membantu proses pengurusan Sertifikat Halal dan Nomor Induk Berusaha (NIB) secara mudah, cepat, dan sesuai ketentuan yang berlaku.</p>
-    <a href="#formulir" class="btn btn-gold" onclick="createRipple(event)">DAFTAR SEKARANG</a>
+    <a href="#formulir" class="btn btn-gold">DAFTAR SEKARANG</a>
   </div>
 </section>
 
@@ -718,7 +718,7 @@
         <input type="checkbox" name="persetujuan" required>
         Saya bersedia dihubungi oleh Tim LP3H Darussunah untuk proses pendampingan.
       </label>
-      <button type="submit" class="btn btn-gold form-submit" id="submitBtn" onclick="createRipple(event)">KIRIM PENDAFTARAN</button>
+      <button type="submit" class="btn btn-gold form-submit" id="submitBtn">KIRIM PENDAFTARAN</button>
       <div id="formStatus" role="status"></div>
       <p class="form-note">Data Anda hanya digunakan untuk keperluan pendampingan sertifikasi halal.</p>
     </form>
@@ -821,7 +821,7 @@
   <div class="container">
     <h2>Siap Mengembangkan Usaha Anda?</h2>
     <p>Jangan tunda legalitas usaha Anda. Segera daftarkan Sertifikat Halal bersama LP3H Darussunah agar usaha semakin dipercaya masyarakat.</p>
-    <a href="#formulir" class="btn btn-gold" onclick="createRipple(event)">DAFTAR SEKARANG</a>
+    <a href="#formulir" class="btn btn-gold">DAFTAR SEKARANG</a>
   </div>
 </section>
 
@@ -902,114 +902,62 @@
   const status = document.getElementById('formStatus');
   const submitBtn = document.getElementById('submitBtn');
 
-  function buildWhatsAppMessage(data, savedToNetlify, savedToSheet) {
-    const name = data.get('nama') || '-';
-    const wa = data.get('whatsapp') || '-';
-    const alamat = data.get('alamat') || '-';
-    const produk = data.get('jenis_produk') || '-';
+  // Nomor WhatsApp ADMIN LP3H Darussunah.
+  // Jangan diisi pada kolom WhatsApp pelaku usaha.
+  const ADMIN_WA = '6281386108624';
 
-    return [
-      'Assalamualaikum Tim LP3H Darussunah,',
-      '',
-      'Saya ingin mendaftar Sertifikat Halal Gratis.',
-      '',
-      'Nama Pelaku Usaha: ' + name,
-      'Nomor WhatsApp: ' + wa,
-      'Alamat: ' + alamat,
-      'Jenis Produk: ' + produk,
-      '',
-      'Mohon dibantu proses pendampingannya. Terima kasih.'
-    ].join('\\n');
-  }
+  if (form && status && submitBtn) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
 
-  async function submitNetlify(data) {
-    const payload = new URLSearchParams(data);
-    const response = await fetch('/', {
-      method: 'POST',
-      headers: {'Content-Type':'application/x-www-form-urlencoded'},
-      body: payload.toString()
-    });
-    if (!response.ok) throw new Error('Netlify Forms gagal menyimpan data.');
-    return true;
-  }
-
-  async function submitGoogleSheet(data) {
-    if (!CONFIG.GOOGLE_SHEETS_ENDPOINT) return false;
-    const payload = new URLSearchParams();
-    data.forEach((value, key) => payload.append(key, value));
-
-    const response = await fetch(CONFIG.GOOGLE_SHEETS_ENDPOINT, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: payload
-    });
-    // no-cors tidak memungkinkan browser membaca status HTTP.
-    // Jika request selesai, dianggap terkirim ke endpoint Apps Script.
-    return response.type === 'opaque';
-  }
-
-  form.addEventListener('submit', async function(e){
-    e.preventDefault();
-
-    if (!form.checkValidity()) {
-      form.reportValidity();
-      return;
-    }
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'MENGIRIM...';
-    status.className = '';
-    status.style.display = 'none';
-
-    const data = new FormData(form);
-    const waMessage = buildWhatsAppMessage(data);
-
-    // Dibuka saat event klik/submission masih aktif agar tidak mudah diblokir popup.
-    const waUrl = 'https://wa.me/' + CONFIG.ADMIN_WA + '?text=' + encodeURIComponent(waMessage);
-    let waWindow = null;
-    try {
-      waWindow = window.open('about:blank', '_blank');
-    } catch (_) {}
-
-    let netlifySaved = false;
-    let sheetSaved = false;
-
-    try {
-      // Penyimpanan utama/cadangan di Netlify Forms.
-      netlifySaved = await submitNetlify(data);
-
-      // Penyimpanan tambahan ke Google Sheet bila endpoint sudah dipasang.
-      try {
-        sheetSaved = await submitGoogleSheet(data);
-      } catch (sheetError) {
-        console.warn('Google Sheet belum tersambung:', sheetError);
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
       }
 
-      status.textContent = sheetSaved
-        ? 'Pendaftaran tersimpan. WhatsApp pendaftaran akan dibuka sekarang.'
-        : 'Pendaftaran tersimpan. WhatsApp pendaftaran akan dibuka sekarang.';
+      const nama = document.getElementById('nama').value.trim();
+      const whatsapp = document.getElementById('wa').value.trim();
+      const alamat = document.getElementById('alamat').value.trim();
+      const produk = document.getElementById('produk').value;
+
+      if (!nama || !whatsapp || !alamat || !produk) {
+        status.textContent = 'Mohon lengkapi semua data pendaftaran.';
+        status.className = 'error';
+        status.style.display = 'block';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'MEMPROSES...';
+      status.textContent = 'Membuka WhatsApp Admin...';
       status.className = 'success';
       status.style.display = 'block';
 
-      form.reset();
+      const message = [
+        'Assalamualaikum Tim LP3H Darussunah,',
+        '',
+        'Saya ingin mendaftar Sertifikat Halal Gratis.',
+        '',
+        'Nama Pelaku Usaha: ' + nama,
+        'Nomor WhatsApp: ' + whatsapp,
+        'Alamat: ' + alamat,
+        'Jenis Produk: ' + produk,
+        '',
+        'Mohon dibantu proses pendampingannya. Terima kasih.'
+      ].join('\n');
 
-      if (waWindow && !waWindow.closed) {
-        waWindow.location.href = waUrl;
-      } else {
+      const waUrl =
+        'https://wa.me/' + ADMIN_WA +
+        '?text=' + encodeURIComponent(message);
+
+      setTimeout(function() {
         window.location.href = waUrl;
-      }
-    } catch (error) {
-      console.error(error);
-      if (waWindow && !waWindow.closed) waWindow.close();
+      }, 400);
+    });
+  } else {
+    console.error('Form pendaftaran tidak ditemukan.');
+  }
 
-      status.textContent = 'Data belum berhasil disimpan. Silakan coba lagi atau hubungi admin melalui tombol WhatsApp.';
-      status.className = 'error';
-      status.style.display = 'block';
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'KIRIM PENDAFTARAN';
-    }
-  });
 })();
 </script>
 
